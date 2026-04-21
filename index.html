@@ -185,7 +185,6 @@
             .controls { bottom: 10px; width: 95%; flex-wrap: wrap; padding: 1rem; }
             button { flex: 1; min-width: 140px; justify-content: center; font-size: 1rem; }
         }
-        #file-input { display: none; }
     </style>
 </head>
 <body>
@@ -296,19 +295,6 @@
             document.getElementById('count-seat').textContent = selSe;
         }
 
-        document.getElementById('file-input').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
-                students = json.filter(r => r[0] && r[1]).map(r => ({ id: r[0], name: r[1], assigned: false, selected: false }));
-                renderStudentList(); updateCounters();
-            };
-            reader.readAsArrayBuffer(file);
-        });
 
         function renderStudentList() {
             const list = document.getElementById('student-list');
