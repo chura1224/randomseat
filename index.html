@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프리미엄 랜덤 좌석 배정 - 최종 고도화 버전</title>
+    <!-- 폰트 및 라이브러리 로드 -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Gaegu:wght@400;700&family=Nanum+Square+Round:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary: #ff9aa2; /* 조금 더 선명한 파스텔 핑크 */
+            --primary-dark: #ff6b6b;
+            --secondary: #fedc56; /* 더 뚜렷한 노랑 */
+            --accent: #8ce99a; /* 더 선명한 파스텔 그린 */
+            --bg-main: #fffdf9; /* Ivory Cream */
+            --text-main: #3d3535; /* 더 짙은 갈색 - 가독성 핵심 */
+            --text-sub: #7d7070; /* 더 짙은 보조 텍스트 색상 */
+            --desk-border: #f0d38a; /* 책상 테두리를 더 명확하게 */
+            --shadow-cute: 0 6px 0 #e8dbc5;
+            --transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Gaegu', 'Fredoka', cursive, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            background-image: radial-gradient(#e8e3d5 1.5px, transparent 1.5px);
+            background-size: 30px 30px;
+            color: var(--text-main);
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            flex: 1;
+            padding: 2rem;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Sidebar: Sketchbook Style */
+        .sidebar {
+            width: 320px;
+            background: white;
+            border: 4px solid #f2ede4;
+            border-radius: 40px 10px 40px 10px;
+            padding: 2.5rem 2rem;
+            box-shadow: 10px 10px 0 #f2ede4;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            position: relative;
+        }
+        .sidebar::before {
+            content: '● ● ●';
+            position: absolute;
+            top: 20px; left: 20px;
+            color: #f2ede4; letter-spacing: 5px; font-size: 10px;
+        }
+
+        .sidebar h2 {
+            font-size: 2rem; font-weight: 700; margin-bottom: 2rem;
+            color: var(--primary-dark); text-align: center;
+        }
+
+        .upload-area {
+            border: 3px dashed var(--secondary); padding: 1.2rem;
+            text-align: center; border-radius: 25px; margin-bottom: 1.5rem;
+            cursor: pointer; background: #fffef2; transition: var(--transition);
+        }
+        .upload-area:hover { transform: scale(1.02); background: #fff9db; }
+
+        .status-pill-container { display: flex; gap: 0.8rem; margin-bottom: 1.5rem; }
+        .status-pill { 
+            flex: 1; padding: 1rem; border-radius: 20px; text-align: center; 
+            background: #fff; border: 2px solid #f8f3eb;
+        }
+        .status-pill span:first-child { font-size: 0.85rem; color: var(--text-sub); display: block; margin-bottom: 2px; }
+        .pill-val { font-size: 1.6rem; font-weight: 700; color: var(--primary-dark); }
+
+        .student-list-container { flex: 1; overflow-y: auto; padding-right: 8px; margin-bottom: 1.5rem; }
+        .student-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
+        .student-item { 
+            padding: 0.8rem; background: white; border-radius: 20px; font-size: 1.1rem; 
+            text-align: center; cursor: grab; transition: var(--transition); border: 2px solid #f8f3eb;
+        }
+        .student-item:hover { transform: translateY(-4px) rotate(3deg); border-color: var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .student-item.selected { background: var(--primary); color: white; border-color: var(--primary-dark); }
+        .student-item.assigned { opacity: 0.3; filter: grayscale(1); }
+
+        /* Classroom Area */
+        .classroom-area {
+            flex: 1; padding: 2rem; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; position: relative;
+        }
+
+        #rotate-target { width: 100%; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; align-items: center; }
+        #print-area { 
+            width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; 
+            background-color: var(--bg-main);
+            background-image: radial-gradient(#e8e3d5 1.5px, transparent 1.5px);
+            background-size: 30px 30px;
+            padding: 3rem;
+            border-radius: 40px;
+        }
+
+        /* Title: Cloud Bubble Style */
+        .classroom-title {
+            background: white; padding: 1.2rem 3.5rem; border-radius: 100px;
+            font-size: 2.2rem; font-weight: 700; color: #ff6b6b;
+            box-shadow: 0 12px 30px rgba(255, 107, 107, 0.2);
+            border: 4px solid #ffc9c9; position: relative; margin-bottom: 1.5rem;
+        }
+        .classroom-title::after {
+            content: '❤'; position: absolute; bottom: -10px; right: 20px;
+            font-size: 1.5rem; color: #ff6b6b;
+        }
+
+        .podium {
+            background: #ffa8a8; color: white; padding: 0.8rem 3rem;
+            border-radius: 25px; font-weight: 700; font-size: 1.3rem;
+            box-shadow: 0 6px 0 #ffadad; margin-top: 1rem;
+        }
+
+        .desk-grid { display: flex; justify-content: center; gap: 2.5rem; margin: 1.5rem 0; width: 100%; }
+        .desk-group { display: grid; grid-template-columns: repeat(2, 100px); grid-template-rows: repeat(5, 75px); gap: 18px; }
+        
+        .desk { 
+            background: white; border: 3.5px solid var(--desk-border); border-radius: 24px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            position: relative; cursor: pointer; transition: var(--transition); box-shadow: var(--shadow-cute);
+        }
+        .desk:hover { transform: scale(1.1) rotate(-2deg); z-index: 5; border-color: var(--primary); }
+        
+        .desk.selected { border-color: #ff8787; background: #fffafa; box-shadow: 0 6px 0 #ff8787; }
+        .desk.drag-over { background: #e3fafc; transform: scale(1.2); }
+        .desk.export-mode { border: 3.5px solid #d4b483 !important; box-shadow: 0 4px 0 #e8dbc5 !important; background: white !important; }
+
+        .student-info { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 2px; font-family: 'Fredoka', sans-serif; font-weight: 700; }
+        .student-name { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+
+        .rotate-180 .student-name, .rotate-180 .student-info, .rotate-180 .podium, .rotate-180 .classroom-title { transform: rotate(180deg); }
+
+        /* Floating Controls */
+        .controls { 
+            position: sticky; bottom: 20px; align-self: center; background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px); padding: 1.2rem 2.5rem; border-radius: 35px;
+            display: flex; justify-content: center; gap: 1rem; z-index: 100;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08); border: 3px solid #f8f3eb;
+            margin-bottom: 25px;
+        }
+
+        button { 
+            padding: 0.8rem 2rem; border-radius: 25px; border: none; font-weight: 700; font-size: 1.1rem; 
+            cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 10px; 
+            box-shadow: 0 4px 0 #ede4d5;
+        }
+        button:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 8px 0 #ede4d5; }
+        button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 transparent; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 0 var(--primary-dark); }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 8px 0 var(--primary-dark); }
+        
+        .btn-secondary { background: #fdfcf0; color: #857c6b; border: 2.5px solid #f2ede4; }
+        .btn-accent { background: var(--accent); color: #456345; box-shadow: 0 4px 0 #8ce99a; }
+        .btn-accent:hover:not(:disabled) { box-shadow: 0 8px 0 #8ce99a; }
+
+        @media (max-width: 1024px) {
+            .app-container { flex-direction: column; padding: 1rem; }
+            .sidebar { width: 100%; height: auto; box-shadow: 0 10px 0 #f2ede4; margin-bottom: 1rem; }
+            .student-list { grid-template-columns: repeat(4, 1fr); }
+            .desk-grid { transform: scale(0.8); margin: 0; }
+            .controls { bottom: 10px; width: 95%; flex-wrap: wrap; padding: 1rem; }
+            button { flex: 1; min-width: 140px; justify-content: center; font-size: 1rem; }
+        }
+        #file-input { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h2>Students</h2>
+            <label for="file-input" class="upload-area">
+                <p style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Excel 파일 업로드 📂</p>
+                <input type="file" id="file-input" accept=".xlsx, .xls">
+            </label>
+
+            <button class="btn-primary" style="width: 100%; margin-bottom: 2rem; justify-content: center;" onclick="loadClass2_5()">명렬 불러오기 ✨</button>
+            
+            <div class="status-pill-container">
+                <div class="status-pill"><span>학생 선택</span><span class="pill-val" id="count-student">0</span></div>
+                <div class="status-pill"><span>좌석 선택</span><span class="pill-val" id="count-seat">0</span></div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 1.5rem;">
+                <button class="btn-secondary" style="flex: 1; padding: 10px; font-size: 0.95rem;" onclick="selectAllStudents()">학생 전체</button>
+                <button class="btn-secondary" style="flex: 1; padding: 10px; font-size: 0.95rem;" onclick="selectAllSeats()">좌석 전체</button>
+            </div>
+
+            <div class="student-list-container"><div class="student-list" id="student-list"></div></div>
+        </aside>
+
+        <main class="classroom-area">
+            <div id="rotate-target">
+                <div id="print-area">
+                    <div class="classroom-title">✨ 2학년 5반 아이들, 예쁘게 봐주세요 ✨</div>
+                    <div class="desk-grid">
+                        <div class="desk-group" id="group-1"></div>
+                        <div class="desk-group" id="group-2"></div>
+                        <div class="desk-group" id="group-3"></div>
+                    </div>
+                    <div id="main-podium" class="podium">교 탁</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="controls">
+        <button class="btn-secondary" id="btn-view" onclick="toggleView()">🔄 시점 전환</button>
+        <button class="btn-secondary" id="btn-reset" onclick="resetAll()">🧹 리셋</button>
+        <button class="btn-primary" id="btn-random" onclick="randomAssign(false)">🎲 랜덤 배치</button>
+        <button class="btn-accent" id="btn-instant" onclick="randomAssign(true)">⚡ 즉시 배치</button>
+        <button class="btn-accent" id="btn-save" onclick="saveImage()">📸 이미지 저장</button>
+    </div>
+
+    <script>
+        let students = [];
+        let seats = Array.from({length: 30}, (_, i) => ({ id: i + 1, student: null, selected: false }));
+
+        function loadClass2_5() {
+            const classList = [
+                {"id": 1, "name": "고병민"}, {"id": 2, "name": "고채은"}, {"id": 3, "name": "김도윤"},
+                {"id": 4, "name": "김도율"}, {"id": 5, "name": "김도은"}, {"id": 6, "name": "김보은"},
+                {"id": 7, "name": "김승현"}, {"id": 8, "name": "남은서"}, {"id": 9, "name": "서여민"},
+                {"id": 10, "name": "손윤아"}, {"id": 11, "name": "유가영"}, {"id": 12, "name": "유승아"},
+                {"id": 13, "name": "유승언"}, {"id": 14, "name": "유채원"}, {"id": 15, "name": "이건희"},
+                {"id": 16, "name": "이소민"}, {"id": 17, "name": "이승영"}, {"id": 19, "name": "이초현"},
+                {"id": 20, "name": "장미강"}, {"id": 21, "name": "전시은"}, {"id": 22, "name": "전유찬"},
+                {"id": 23, "name": "정서연"}, {"id": 24, "name": "지우빈"}, {"id": 25, "name": "최창아"},
+                {"id": 26, "name": "홍성민"}
+            ];
+            
+            students = classList.map(r => ({ id: r.id, name: r.name, assigned: false, selected: false }));
+            renderStudentList();
+            updateCounters();
+        }
+        let isViewRotated = false;
+        let isAssigning = false;
+
+        function initSeats() {
+            const groups = [document.getElementById('group-1'), document.getElementById('group-2'), document.getElementById('group-3')];
+            groups.forEach(g => g.innerHTML = '');
+            seats.forEach((seat, index) => {
+                const groupIdx = Math.floor(index / 10);
+                const desk = document.createElement('div');
+                desk.className = `desk ${seat.selected ? 'selected' : ''}`;
+                desk.id = `seat-${seat.id}`;
+                desk.draggable = !isAssigning;
+                
+                const sName = seat.student ? seat.student.name : '';
+                const sInfo = seat.student ? seat.student.id + '번' : '';
+                desk.innerHTML = `<div class="student-info">${sInfo}</div><div class="student-name">${sName}</div>`;
+                
+                desk.onclick = () => { if(!isAssigning) toggleSeatSelection(seat.id) };
+                desk.ondragstart = (e) => {
+                    if (isAssigning || !seat.student) return;
+                    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'seat', seatId: seat.id }));
+                };
+                desk.ondragover = (e) => e.preventDefault();
+                desk.ondragenter = (e) => { e.preventDefault(); desk.classList.add('drag-over'); };
+                desk.ondragleave = () => desk.classList.remove('drag-over');
+                desk.ondrop = (e) => handleDrop(e, seat.id);
+
+                groups[groupIdx].appendChild(desk);
+            });
+            updateCounters();
+        }
+
+        function toggleSeatSelection(id) {
+            const s = seats.find(x => x.id === id);
+            s.selected = !s.selected;
+            initSeats();
+        }
+
+        function updateCounters() {
+            const selSt = students.filter(s => s.selected).length;
+            const selSe = seats.filter(s => s.selected).length;
+            document.getElementById('count-student').textContent = selSt;
+            document.getElementById('count-seat').textContent = selSe;
+        }
+
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+                students = json.filter(r => r[0] && r[1]).map(r => ({ id: r[0], name: r[1], assigned: false, selected: false }));
+                renderStudentList(); updateCounters();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function renderStudentList() {
+            const list = document.getElementById('student-list');
+            list.innerHTML = '';
+            students.forEach((s, idx) => {
+                const item = document.createElement('div');
+                item.className = `student-item ${s.selected ? 'selected' : ''} ${s.assigned ? 'assigned' : ''}`;
+                item.textContent = `${s.id}. ${s.name}`;
+                item.draggable = !isAssigning;
+                item.onclick = () => { if (!isAssigning) { s.selected = !s.selected; renderStudentList(); updateCounters(); } };
+                item.ondragstart = (e) => { if (!isAssigning) e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'list', index: idx })); };
+                list.appendChild(item);
+            });
+        }
+
+        function handleDrop(e, targetId) {
+            e.preventDefault();
+            const desk = document.getElementById(`seat-${targetId}`);
+            desk.classList.remove('drag-over');
+            const dataStr = e.dataTransfer.getData('text/plain');
+            if (!dataStr) return;
+            const data = JSON.parse(dataStr);
+            const target = seats.find(x => x.id === targetId);
+
+            if (data.type === 'list') {
+                const student = students[data.index];
+                const old = seats.find(x => x.student && x.student.id === student.id);
+                if (old) old.student = null;
+                if (target.student) students.find(x => x.id === target.student.id).assigned = false;
+                target.student = { id: student.id, name: student.name };
+                student.assigned = true;
+            } else if (data.type === 'seat') {
+                const source = seats.find(x => x.id === data.seatId);
+                const temp = target.student;
+                target.student = source.student;
+                source.student = temp;
+            }
+            initSeats(); renderStudentList();
+        }
+
+        async function randomAssign(instant) {
+            if (isAssigning) return;
+            const selSt = students.filter(s => s.selected);
+            const selSe = seats.filter(s => s.selected);
+            if (selSt.length === 0) { alert('학생을 선택해주세요!'); return; }
+            let targetSe = selSe.length > 0 ? selSe : seats.filter(x => !x.student);
+            if (targetSe.length < selSt.length) { alert('공간이 부족합니다!'); return; }
+
+            isAssigning = true; disableButtons(true);
+            selSt.forEach(s => {
+                const o = seats.find(x => x.student && x.student.id === s.id);
+                if (o) o.student = null; s.assigned = false;
+            });
+
+            const shSt = [...selSt].sort(() => Math.random() - 0.5);
+            const shSe = [...targetSe].sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < shSt.length; i++) {
+                const st = shSt[i]; const se = shSe[i];
+                if (se.student) students.find(x => x.id === se.student.id).assigned = false;
+                se.student = { id: st.id, name: st.name }; st.assigned = true;
+                
+                if (!instant) {
+                    const el = document.getElementById(`seat-${se.id}`);
+                    el.innerHTML = `<div class="student-info">${st.id}번</div><div class="student-name">${st.name}</div>`;
+                    el.classList.add('newly-assigned');
+                    renderStudentList(); await new Promise(r => setTimeout(r, 600));
+                    el.classList.remove('newly-assigned');
+                }
+            }
+            isAssigning = false; disableButtons(false); initSeats(); renderStudentList();
+        }
+
+        function disableButtons(d) {
+            ['btn-view', 'btn-reset', 'btn-random', 'btn-instant', 'btn-save'].forEach(id => document.getElementById(id).disabled = d);
+        }
+
+        function toggleView() {
+            isViewRotated = !isViewRotated;
+            const target = document.getElementById('rotate-target');
+            target.style.transform = isViewRotated ? 'rotate(180deg)' : 'rotate(0deg)';
+            target.classList.toggle('rotate-180', isViewRotated);
+        }
+
+        function selectAllSeats() {
+            const any = seats.some(x => !x.selected);
+            seats.forEach(x => x.selected = any); initSeats();
+        }
+
+        function selectAllStudents() {
+            const any = students.some(x => !x.selected);
+            students.forEach(x => x.selected = any); renderStudentList(); updateCounters();
+        }
+
+        function resetAll() {
+            if (!confirm('초기화할까요?')) return;
+            students.forEach(s => { s.assigned = false; s.selected = false; });
+            seats.forEach(s => { s.student = null; s.selected = false; });
+            initSeats(); renderStudentList();
+        }
+
+        function saveImage() {
+            const today = new Date().toISOString().split('T')[0];
+            const r = isViewRotated; if (r) toggleView();
+            
+            // 이미지 저장 시에만 모든 책상 스타일을 통일 (강조 테두리 제거)
+            const allDesks = document.querySelectorAll('.desk');
+            allDesks.forEach(d => d.classList.add('export-mode'));
+
+            html2canvas(document.getElementById('print-area'), { 
+                scale: 2,
+                backgroundColor: null,
+                useCORS: true
+            }).then(canvas => {
+                const a = document.createElement('a'); 
+                a.download = `배치도_${today}.png`; 
+                a.href = canvas.toDataURL('image/png'); 
+                a.click();
+                
+                // 캡처 후 스타일 복구
+                allDesks.forEach(d => d.classList.remove('export-mode'));
+                if (r) toggleView();
+            });
+        }
+
+        initSeats();
+        loadClass2_5(); // 기본으로 2-5 명렬 로드
+        window.addEventListener("dragover", e => e.preventDefault());
+        window.addEventListener("drop", e => e.preventDefault());
+    </script>
+</body>
+</html>
