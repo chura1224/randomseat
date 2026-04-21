@@ -124,8 +124,7 @@
             border: 4px solid #ffc9c9; position: relative; margin-bottom: 1.5rem;
         }
         .classroom-title::after {
-            content: '❤'; position: absolute; bottom: -10px; right: 20px;
-            font-size: 1.5rem; color: #ff6b6b;
+            content: none;
         }
 
         .podium {
@@ -194,12 +193,6 @@
     <div class="app-container">
         <aside class="sidebar">
             <h2>Students</h2>
-            <label for="file-input" class="upload-area">
-                <p style="font-size: 1rem; font-weight: 700; color: var(--text-main);">Excel 파일 업로드 📂</p>
-                <input type="file" id="file-input" accept=".xlsx, .xls">
-            </label>
-
-            <button class="btn-primary" style="width: 100%; margin-bottom: 2rem; justify-content: center;" onclick="loadClass2_5()">명렬 불러오기 ✨</button>
             
             <div class="status-pill-container">
                 <div class="status-pill"><span>학생 선택</span><span class="pill-val" id="count-student">0</span></div>
@@ -207,8 +200,8 @@
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 1.5rem;">
-                <button class="btn-secondary" style="flex: 1; padding: 10px; font-size: 0.95rem;" onclick="selectAllStudents()">학생 전체</button>
-                <button class="btn-secondary" style="flex: 1; padding: 10px; font-size: 0.95rem;" onclick="selectAllSeats()">좌석 전체</button>
+                <button class="btn-secondary" style="flex: 1; padding: 10px; font-size: 0.95rem; justify-content: center;" onclick="selectAllStudents()">학생 전체</button>
+                <button class="btn-secondary" style="flex: 1; padding: 10px; font-size: 0.95rem; justify-content: center;" onclick="selectAllSeats()">좌석 전체</button>
             </div>
 
             <div class="student-list-container"><div class="student-list" id="student-list"></div></div>
@@ -217,7 +210,7 @@
         <main class="classroom-area">
             <div id="rotate-target">
                 <div id="print-area">
-                    <div class="classroom-title">✨ 2학년 5반 아이들, 예쁘게 봐주세요 ✨</div>
+                    <div class="classroom-title">❤️ 2학년 5반 아이들, 예쁘게 봐주세요 ❤️</div>
                     <div class="desk-grid">
                         <div class="desk-group" id="group-1"></div>
                         <div class="desk-group" id="group-2"></div>
@@ -401,13 +394,18 @@
         }
 
         function selectAllSeats() {
-            const any = seats.some(x => !x.selected);
-            seats.forEach(x => x.selected = any); initSeats();
+            const targetSeats = seats.filter(x => !x.student);
+            const any = targetSeats.some(x => !x.selected);
+            targetSeats.forEach(x => x.selected = any);
+            initSeats();
         }
 
         function selectAllStudents() {
-            const any = students.some(x => !x.selected);
-            students.forEach(x => x.selected = any); renderStudentList(); updateCounters();
+            const targetStudents = students.filter(x => !x.assigned);
+            const any = targetStudents.some(x => !x.selected);
+            targetStudents.forEach(x => x.selected = any);
+            renderStudentList();
+            updateCounters();
         }
 
         function resetAll() {
