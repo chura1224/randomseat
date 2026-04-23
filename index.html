@@ -128,13 +128,13 @@
         }
 
         .podium {
-            background: #ffa8a8; color: white; padding: 0.8rem 3rem;
-            border-radius: 25px; font-weight: 700; font-size: 1.3rem;
-            box-shadow: 0 6px 0 #ffadad; margin-top: 1rem;
+            background: #ffa8a8; color: white; padding: 1.2rem 5rem;
+            border-radius: 30px; font-weight: 700; font-size: 1.8rem;
+            box-shadow: 0 8px 0 #ffadad; margin-top: 1.5rem;
         }
 
-        .desk-grid { display: flex; justify-content: center; gap: 2.5rem; margin: 1.5rem 0; width: 100%; }
-        .desk-group { display: grid; grid-template-columns: repeat(2, 100px); grid-template-rows: repeat(5, 75px); gap: 18px; }
+        .desk-grid { display: flex; justify-content: center; gap: 4.5rem; margin: 2rem 0; width: 100%; }
+        .desk-group { display: grid; grid-template-columns: repeat(2, 130px); grid-template-rows: repeat(5, 95px); gap: 20px; }
         
         .desk { 
             background: white; border: 3.5px solid var(--desk-border); border-radius: 24px; 
@@ -147,8 +147,8 @@
         .desk.drag-over { background: #e3fafc; transform: scale(1.2); }
         .desk.export-mode { border: 3.5px solid #d4b483 !important; box-shadow: 0 4px 0 #e8dbc5 !important; background: white !important; }
 
-        .student-info { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 2px; font-family: 'Fredoka', sans-serif; font-weight: 700; }
-        .student-name { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+        .student-info { font-size: 1rem; color: var(--text-sub); margin-bottom: 4px; font-family: 'Fredoka', sans-serif; font-weight: 700; }
+        .student-name { font-size: 1.8rem; font-weight: 800; color: var(--text-main); }
 
         .rotate-180 .student-name, .rotate-180 .student-info, .rotate-180 .podium, .rotate-180 .classroom-title { transform: rotate(180deg); }
 
@@ -206,6 +206,7 @@
             border: 3px solid #f2ede4; cursor: pointer; transition: var(--transition);
             box-shadow: 0 8px 0 #ede4d5;
             white-space: nowrap; /* 글자 줄바꿈 방지 */
+            justify-content: center; /* 텍스트 중앙 정렬 추가 */
         }
         .btn-class:hover { transform: translateY(-10px); box-shadow: 0 18px 0 #ede4d5; background: white; border-color: var(--primary); }
 
