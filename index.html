@@ -202,12 +202,12 @@
         .selector-card h1 { font-size: 3rem; color: var(--primary-dark); margin-bottom: 3rem; }
         .class-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
         .btn-class { 
-            padding: 2rem; font-size: 1.8rem; border-radius: 30px; background: #fffaf0; 
+            padding: 2.5rem 1rem; font-size: 1.8rem; border-radius: 30px; background: #fffaf0; 
             border: 3px solid #f2ede4; cursor: pointer; transition: var(--transition);
             box-shadow: 0 8px 0 #ede4d5;
+            white-space: nowrap; /* 글자 줄바꿈 방지 */
         }
         .btn-class:hover { transform: translateY(-10px); box-shadow: 0 18px 0 #ede4d5; background: white; border-color: var(--primary); }
-        .btn-class span { display: block; font-size: 1rem; color: var(--text-sub); margin-top: 5px; }
 
         .hidden { display: none !important; }
     </style>
@@ -218,8 +218,8 @@
         <div class="selector-card">
             <h1>어느 반인가요? ❤️</h1>
             <div class="class-buttons">
-                <button class="btn-class" onclick="selectClass('1-2')">1학년 2반<span>28명</span></button>
-                <button class="btn-class" onclick="selectClass('2-5')">2학년 5반<span>26명</span></button>
+                <button class="btn-class" onclick="selectClass('1-2')">1학년 2반</button>
+                <button class="btn-class" onclick="selectClass('2-5')">2학년 5반</button>
             </div>
         </div>
     </div>
