@@ -185,9 +185,44 @@
             .controls { bottom: 10px; width: 95%; flex-wrap: wrap; padding: 1rem; }
             button { flex: 1; min-width: 140px; justify-content: center; font-size: 1rem; }
         }
+
+        /* Class Selection Overlay */
+        #selector-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-main); z-index: 1000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background-image: radial-gradient(#e8e3d5 1.5px, transparent 1.5px);
+            background-size: 30px 30px;
+        }
+        .selector-card {
+            background: white; padding: 4rem; border-radius: 50px;
+            box-shadow: 20px 20px 0 #f2ede4; border: 5px solid #f2ede4;
+            text-align: center; max-width: 600px; width: 90%;
+        }
+        .selector-card h1 { font-size: 3rem; color: var(--primary-dark); margin-bottom: 3rem; }
+        .class-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .btn-class { 
+            padding: 2rem; font-size: 1.8rem; border-radius: 30px; background: #fffaf0; 
+            border: 3px solid #f2ede4; cursor: pointer; transition: var(--transition);
+            box-shadow: 0 8px 0 #ede4d5;
+        }
+        .btn-class:hover { transform: translateY(-10px); box-shadow: 0 18px 0 #ede4d5; background: white; border-color: var(--primary); }
+        .btn-class span { display: block; font-size: 1rem; color: var(--text-sub); margin-top: 5px; }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
+    <!-- Class Selector Overlay -->
+    <div id="selector-overlay">
+        <div class="selector-card">
+            <h1>어느 반인가요? ❤️</h1>
+            <div class="class-buttons">
+                <button class="btn-class" onclick="selectClass('1-2')">1학년 2반<span>28명</span></button>
+                <button class="btn-class" onclick="selectClass('2-5')">2학년 5반<span>26명</span></button>
+            </div>
+        </div>
+    </div>
 
     <div class="app-container">
         <aside class="sidebar">
@@ -204,12 +239,13 @@
             </div>
 
             <div class="student-list-container"><div class="student-list" id="student-list"></div></div>
+            <button class="btn-secondary" style="width: 100%; margin-top: 1rem; justify-content: center; font-size: 0.9rem;" onclick="showSelector()">🔄 반 이동</button>
         </aside>
 
         <main class="classroom-area">
             <div id="rotate-target">
                 <div id="print-area">
-                    <div class="classroom-title">❤️ 2학년 5반 아이들, 예쁘게 봐주세요 ❤️</div>
+                    <div class="classroom-title" id="class-title">❤️ 학급을 선택해주세요 ❤️</div>
                     <div class="desk-grid">
                         <div class="desk-group" id="group-1"></div>
                         <div class="desk-group" id="group-2"></div>
@@ -232,23 +268,60 @@
     <script>
         let students = [];
         let seats = Array.from({length: 30}, (_, i) => ({ id: i + 1, student: null, selected: false }));
+        let currentClassId = '';
 
-        function loadClass2_5() {
-            const classList = [
-                {"id": 1, "name": "고병민"}, {"id": 2, "name": "고채은"}, {"id": 3, "name": "김도윤"},
-                {"id": 4, "name": "김도율"}, {"id": 5, "name": "김도은"}, {"id": 6, "name": "김보은"},
-                {"id": 7, "name": "김승현"}, {"id": 8, "name": "남은서"}, {"id": 9, "name": "서여민"},
-                {"id": 10, "name": "손윤아"}, {"id": 11, "name": "유가영"}, {"id": 12, "name": "유승아"},
-                {"id": 13, "name": "유승언"}, {"id": 14, "name": "유채원"}, {"id": 15, "name": "이건희"},
-                {"id": 16, "name": "이소민"}, {"id": 17, "name": "이승영"}, {"id": 19, "name": "이초현"},
-                {"id": 20, "name": "장미강"}, {"id": 21, "name": "전시은"}, {"id": 22, "name": "전유찬"},
-                {"id": 23, "name": "정서연"}, {"id": 24, "name": "지우빈"}, {"id": 25, "name": "최창아"},
-                {"id": 26, "name": "홍성민"}
-            ];
+        const classData = {
+            '1-2': {
+                name: '1학년 2반',
+                title: '❤️ 1학년 2반 아이들, 예쁘게 봐주세요 ❤️',
+                list: [
+                    {id:1, name:"강유진"}, {id:2, name:"강하랑"}, {id:3, name:"고태현"}, {id:4, name:"김규빈"},
+                    {id:5, name:"김영미"}, {id:6, name:"문서현"}, {id:7, name:"반채윤"}, {id:8, name:"서명원"},
+                    {id:9, name:"신서연"}, {id:10, name:"신지호"}, {id:11, name:"심현보"}, {id:12, name:"윤홍준"},
+                    {id:13, name:"이강욱"}, {id:14, name:"이리원"}, {id:15, name:"이민규"}, {id:16, name:"이선호"},
+                    {id:17, name:"이시온"}, {id:18, name:"이준경"}, {id:19, name:"임현서"}, {id:20, name:"정동준"},
+                    {id:21, name:"정서현"}, {id:22, name:"정유경"}, {id:23, name:"정유리"}, {id:24, name:"최서진"},
+                    {id:25, name:"최예안"}, {id:26, name:"최현호"}, {id:27, name:"한서연"}, {id:28, name:"현수아"}
+                ]
+            },
+            '2-5': {
+                name: '2학년 5반',
+                title: '❤️ 2학년 5반 아이들, 예쁘게 봐주세요 ❤️',
+                list: [
+                    {"id": 1, "name": "고병민"}, {"id": 2, "name": "고채은"}, {"id": 3, "name": "김도윤"},
+                    {"id": 4, "name": "김도율"}, {"id": 5, "name": "김도은"}, {"id": 6, "name": "김보은"},
+                    {"id": 7, "name": "김승현"}, {"id": 8, "name": "남은서"}, {"id": 9, "name": "서여민"},
+                    {"id": 10, "name": "손윤아"}, {"id": 11, "name": "유가영"}, {"id": 12, "name": "유승아"},
+                    {"id": 13, "name": "유승언"}, {"id": 14, "name": "유채원"}, {"id": 15, "name": "이건희"},
+                    {"id": 16, "name": "이소민"}, {"id": 17, "name": "이승영"}, {"id": 19, "name": "이초현"},
+                    {"id": 20, "name": "장미강"}, {"id": 21, "name": "전시은"}, {"id": 22, "name": "전유찬"},
+                    {"id": 23, "name": "정서연"}, {"id": 24, "name": "지우빈"}, {"id": 25, "name": "최창아"},
+                    {"id": 26, "name": "홍성민"}
+                ]
+            }
+        };
+
+        function selectClass(id) {
+            currentClassId = id;
+            const data = classData[id];
             
-            students = classList.map(r => ({ id: r.id, name: r.name, assigned: false, selected: false }));
+            // 데이터 설정
+            students = data.list.map(r => ({ id: r.id, name: r.name, assigned: false, selected: false }));
+            
+            // 타이틀 변경
+            document.getElementById('class-title').textContent = data.title;
+            
+            // UI 업데이트
             renderStudentList();
+            resetAll(true); // 좌석 초기화
             updateCounters();
+            
+            // 오버레이 숨기기
+            document.getElementById('selector-overlay').classList.add('hidden');
+        }
+
+        function showSelector() {
+            document.getElementById('selector-overlay').classList.remove('hidden');
         }
         let isViewRotated = false;
         let isAssigning = false;
@@ -394,8 +467,8 @@
             updateCounters();
         }
 
-        function resetAll() {
-            if (!confirm('초기화할까요?')) return;
+        function resetAll(silent = false) {
+            if (!silent && !confirm('초기화할까요?')) return;
             students.forEach(s => { s.assigned = false; s.selected = false; });
             seats.forEach(s => { s.student = null; s.selected = false; });
             initSeats(); renderStudentList();
@@ -426,7 +499,7 @@
         }
 
         initSeats();
-        loadClass2_5(); // 기본으로 2-5 명렬 로드
+        // loadClass2_5(); // 더 이상 자동으로 로드하지 않고 오버레이에서 선택
         window.addEventListener("dragover", e => e.preventDefault());
         window.addEventListener("drop", e => e.preventDefault());
     </script>
