@@ -108,11 +108,11 @@
 
         #rotate-target { width: 100%; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; align-items: center; }
         #print-area { 
-            width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; 
+            width: max-content; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; 
             background-color: var(--bg-main);
             background-image: radial-gradient(#e8e3d5 1.5px, transparent 1.5px);
             background-size: 30px 30px;
-            padding: 2rem;
+            padding: 3rem;
             border-radius: 40px;
         }
 
@@ -133,7 +133,7 @@
             box-shadow: 0 6px 0 #ffadad; margin-top: 1rem;
         }
 
-        .desk-grid { display: flex; justify-content: center; gap: 3rem; margin: 1.5rem 0; width: 100%; }
+        .desk-grid { display: flex; justify-content: center; gap: 3rem; margin: 1.5rem 0; width: max-content; }
         .desk-group { display: grid; grid-template-columns: repeat(2, 115px); grid-template-rows: repeat(5, 85px); gap: 15px; }
         
         .desk { 
