@@ -100,33 +100,31 @@
         /* 중앙 영역 */
         .classroom-area {
             flex: 1;
-            display: flex;
-            flex-direction: column;
             background: white;
             border-radius: 30px;
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
             padding: 40px;
             position: relative;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            overflow: auto;
             background-image: radial-gradient(circle at 2px 2px, #f1f5f9 1px, transparent 0);
             background-size: 40px 40px;
         }
 
         /* 회전 타겟: 글자들을 위해 transition 유지 */
         #rotate-target {
-            width: 100%; height: 100%;
+            min-width: 100%; min-height: 100%;
             transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-            display: flex; flex-direction: column;
+            display: flex;
         }
 
         /* 실제 프린트/캡처 영역 */
         #print-area {
-            width: 100%; height: 100%;
+            width: 1122px; height: 793px;
+            margin: auto; flex-shrink: 0;
             display: flex; flex-direction: column;
             justify-content: space-between;
             align-items: center;
+            padding: 20px 0;
         }
 
         .classroom-title {
